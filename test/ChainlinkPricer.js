@@ -49,7 +49,7 @@ describe("ChainlinkPricer", function () {
     expect(await busdChainlinkPricer.bot()).to.equal(bot.address);
   });
 
-  it("time travel to test setExpiryPriceInOracle", async function () {
+  it("time travel to test vault complete process of roll to next round", async function () {
     const { bot, busdChainlinkPricer, oracle, oracleOwner, busdAddr } = await loadFixture(deployOneYearLockFixture);
 
     // set new busd pricer at oracle
