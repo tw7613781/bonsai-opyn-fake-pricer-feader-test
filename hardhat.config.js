@@ -14,7 +14,7 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: "https://bsc-dataseed1.binance.org/",
+        url: "http://3.208.7.144:8585/",
         blockNumber: 35570649
       }
     }
