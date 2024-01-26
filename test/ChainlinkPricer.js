@@ -4,6 +4,7 @@ const {
   setBalance
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { expect } = require("chai");
+const vaultAbi = require("./vaultAbi.json");
 
 describe("ChainlinkPricer", function () {
   async function deployOneYearLockFixture() {
@@ -75,6 +76,14 @@ describe("ChainlinkPricer", function () {
     finalized = res[1];
     expect(finalized, false);
 
+    // set bnb price from oracle directly
+    let bnbChainlinkPricerAddr = "0x91192B309fEDC7A3e868cf6b7D71d7E8c0Dfa0e8";
+    let bnbChainPricer = await ethers.getImpersonatedSigner(bnbChainlinkPricerAddr);
+    let bnbAddr = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+    let bnbPice = 30000000000n;
+    await setBalance(bnbChainPricer.address, 100n ** 18n);
+    await oracle.connect(bnbChainPricer).setExpiryPrice(bnbAddr, optionExpiryTs, bnbPice);
+
     // travel abit to finalize the price
     await time.increaseTo(optionExpiryTs + 100);
     res = await oracle.getExpiryPrice(busdAddr, optionExpiryTs);
@@ -82,5 +91,22 @@ describe("ChainlinkPricer", function () {
     expect(price, 100000000n);
     finalized = res[1];
     expect(finalized, true);
+
+    res = await oracle.getExpiryPrice(bnbAddr, optionExpiryTs);
+    price = res[0];
+    expect(price, 30000000000n);
+    finalized = res[1];
+    expect(finalized, true);
+
+    // vault commit and close
+    let bnbCallVaultAddr = "0x01cEF5B79044E1CCd9b6Ad76c3d0985b5A33F769";
+    let bnbCallVault = await ethers.getContractAt(vaultAbi, bnbCallVaultAddr, bot);
+    let vaultState = await bnbCallVault.vaultState();
+    expect(vaultState.round, 46);
+    await bnbCallVault.commitAndClose();
+    await bnbCallVault.connect(bot).rollToNextOption();
+
+    vaultState = await bnbCallVault.vaultState();
+    expect(vaultState.round, 47);
   });
 });
